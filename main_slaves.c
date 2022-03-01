@@ -86,24 +86,25 @@ void __interrupt() isr (void)
             //__delay_us(7);
             z = SSPBUF;                 // Lectura del SSBUF para limpiar el buffer y la bandera BF
             //__delay_us(2);
-            PIR1bits.SSPIF = 0;         // Limpia bandera de interrupci髇 recepci髇/transmisi髇 SSP
+            PIR1bits.SSPIF = 0;         // Limpia bandera de interrupci贸n recepci贸n/transmisi贸n SSP
             SSPCONbits.CKP = 1;         // Habilita entrada de pulsos de reloj SCL
-            while(!SSPSTATbits.BF);     // Esperar a que la recepci髇 se complete
-            semaforo = SSPBUF;             // Guardar en el PORTD el valor del buffer de recepci髇
+            while(!SSPSTATbits.BF);     // Esperar a que la recepci贸n se complete
+            contador = SSPBUF;             // Guardar en el PORTD el valor del buffer de recepci贸n
             __delay_us(250);
             
         }else if(!SSPSTATbits.D_nA && SSPSTATbits.R_nW){ //Escritura
             z = SSPBUF;
             BF = 0;
-            SSPBUF = contador;
+            SSPBUF =  semaforo;
             SSPCONbits.CKP = 1;
             __delay_us(250);
             while(SSPSTATbits.BF);
         }
-       
+        
         PIR1bits.SSPIF = 0;    
     }
 }
+
 
 /*
  * Codigo Principal
@@ -118,37 +119,31 @@ void main (void){
     
     while(1){
        //Cambio de canales de ADC
-        contador = 1;
+        PORTB = ~PORTB;
+       __delay_ms(500);
+        
+        if(contador == 0){
+           PORTA = 1; 
+           // __delay_ms(100);
+           
+            
+        }
         
         if(contador == 1){
-            PORTAbits.RA0 = 1;
-            PORTAbits.RA1 = 0;
-            PORTAbits.RA2 = 0;
-            __delay_ms(1000);
-            contador++;
+            PORTA = 2;
+            //__delay_ms(100);
+           
         }
         
         if(contador == 2){
-            PORTAbits.RA0 = 0;
-            PORTAbits.RA1 = 1;
-            PORTAbits.RA2 = 0;
-            __delay_ms(1000);
-            contador++;
+            PORTA = 4;
+            //__delay_ms(100);
+            
         }
         
-        if(contador == 3){
-            PORTAbits.RA0 = 0;
-            PORTAbits.RA1 = 0;
-            PORTAbits.RA2 = 1;
-            __delay_ms(1000);
-            contador = 1;
-        }
-      
-       
-       
-       
+ 
   }
-    
+  return;  
 }
 
 
@@ -157,28 +152,22 @@ void main (void){
  */
 
 void setup(void){
+    
+      //Configuracion de oscilador
+    OSCCONbits.IRCF = 0b0111; //8MHz
+    OSCCONbits.SCS = 1; //ocsilador interno
+    
     // Configuraciones de entradas y salidas 
-    ANSEL = 0;  //RE0 y RE1 como entradas anal骻icas para ADC 
+    ANSEL = 0;  //RE0 y RE1 como entradas anal贸gicas para ADC 
     ANSELH = 0;
     
     TRISA = 0;
     TRISB = 0;
     
-    
     //valores iniciales
     PORTB = 0;
     PORTA = 0;
-    
-    
-     //Configuracion de oscilador
-    OSCCONbits.IRCF = 0b0111; //8MHz
-    OSCCONbits.SCS = 1; //ocsilador interno
-    
-    
-    USART_Init(8);
-    
-    Lcd_Init();
-    
+   
     I2C_Slave_Init(0x50);
    
     return;
@@ -212,3 +201,4 @@ void division(uint8_t counter)
      
      return;
 }
+
